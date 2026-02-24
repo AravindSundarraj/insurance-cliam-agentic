@@ -1,5 +1,17 @@
 from pydantic import BaseModel
 from typing import List, Optional
+# Define Policy Schema (Very Important)
+# Why This Is Important
+
+# Enforces structured output
+
+# Prevents random hallucinated fields
+
+# Makes evaluation easier
+
+# Makes payout calculation deterministic
+
+# Keeps agent modular
 
 class Policy(BaseModel):
     coverage_types: List[str]
