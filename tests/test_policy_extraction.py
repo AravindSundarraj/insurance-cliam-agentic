@@ -24,5 +24,5 @@ Maximum Coverage Limit: 15000 USD per incident
 
 policy = extract_policy_details(sample_policy)
 
-print(policy)
+print("Print policy ==>>",policy)
 print(policy.model_dump())
