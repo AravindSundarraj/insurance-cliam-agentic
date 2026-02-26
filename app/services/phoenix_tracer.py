@@ -23,7 +23,7 @@ tracer_provider = register(project_name="insurance-cliam-agentic", auto_instrume
 
 tracer = trace.get_tracer("insurance-cliam-agentic-tracer")
 
-def traced_llm_call(prompt: str, llm_function):
+def traced_llm_call(prompt: str, llm_function,span_name: str):
     """
     Traces an LLM call using the OpenTelemetry tracer initialized in the notebook.
     """
@@ -31,7 +31,7 @@ def traced_llm_call(prompt: str, llm_function):
     # If `tracer` is not globally available or passed, you would need to get it here:
     # tracer = trace.get_tracer("your-application-name")
 
-    with tracer.start_as_current_span("policy_extraction_llm_call") as span:
+    with tracer.start_as_current_span(span_name) as span:
         span.set_attribute(SpanAttributes.INPUT_VALUE, prompt)
         output = llm_function(prompt)
         span.set_attribute(SpanAttributes.OUTPUT_VALUE, output)
