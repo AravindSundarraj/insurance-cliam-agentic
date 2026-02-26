@@ -42,5 +42,27 @@ Policy(
 This becomes the foundation for:
 
 Step 2 — Claim understanding
+STEP 2 — Claim Extraction + Evaluation
+🎯 Goal of Step 2
+
+Convert raw claim text into:
+
+Structured claim object
+
+Validated claim
+
+Evaluated quality
+
+Fully traced in Phoenix
+
+This step answers:
+
+“Is this claim structured correctly and internally valid?”
 Step 3 — Coverage classification
+What Step 3 Is Trying to Achieve
+
+Step 3 answers:
+
+Based on the policy rules and the validated claim,
+should the insurance company pay or reject this claim?
 Step 4 — Payout calculation
