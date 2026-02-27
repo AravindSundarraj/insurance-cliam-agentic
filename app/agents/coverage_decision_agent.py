@@ -3,6 +3,7 @@ from openinference.semconv.trace import SpanAttributes
 from app.schemas.policy_schema import Policy
 from app.schemas.claim_schema import Claim
 from app.services.llm_service import call_llm
+from app.evaluations.phoenix_evaluator import evaluate_decision_reasoning
 
 
 def generate_reasoning_llm(policy: Policy, claim: Claim, decision: dict):
@@ -124,8 +125,17 @@ def coverage_decision(policy: Policy, claim: Claim):
     # 5️⃣ Generate Explanation
     # ----------------------------
     explanation = generate_reasoning_llm(policy, claim, decision)
+    with tracer.start_as_current_span("coverage_reasoning_evaluation") as span:
+     reasoning_quality = evaluate_decision_reasoning(
+        policy_text=str(policy),
+        decision_reason=explanation
+    )
+    span.set_attribute("coverage.reasoning_quality", reasoning_quality)
 
+    print("Reasoning Quality:", reasoning_quality)
     return {
         **decision,
-        "reason": explanation
+        "reason": explanation,
+        "reasoning_quality": reasoning_quality
     }
+
