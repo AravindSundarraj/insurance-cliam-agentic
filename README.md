@@ -65,4 +65,40 @@ Step 3 answers:
 
 Based on the policy rules and the validated claim,
 should the insurance company pay or reject this claim?
-Step 4 — Payout calculation
+STEP 4 — Fraud Detection & Risk Scoring Agent
+🎯 Goal of Step 4
+
+Step 4 takes:
+
+✅ Policy (Step 1)
+
+✅ Validated Claim (Step 2)
+
+✅ Coverage Decision (Step 3)
+
+and calculates:
+
+Fraud risk score — Is this claim potentially suspicious?
+
+Risk score — Does this claim pose financial or operational risk?
+
+Recommendation — Flag for human review if necessary.
+
+This improves decision quality, protects the insurer, and ensures compliance.
+Why Step 4 Exists
+
+Step 3 only checks:
+
+Coverage types
+
+Deductible
+
+Coverage limit
+
+But some claims may be legitimately covered but still high-risk or fraudulent:
+
+Multiple small claims in a short period
+
+Claims from blacklisted addresses or clients
+
+Unusual claim patterns vs historical data
