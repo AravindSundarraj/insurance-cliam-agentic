@@ -87,6 +87,16 @@ Recommendation — Flag for human review if necessary.
 This improves decision quality, protects the insurer, and ensures compliance.
 Why Step 4 Exists
 
+Step 4 — Fraud Detection & Risk Scoring Agent as a complete Python module, following your agentic mindset and using Phoenix-style tracing via OpenTelemetry.
+
+This step:
+
+Evaluates fraud and risk scores deterministically
+
+Uses optional LLM only to explain reasoning
+
+Traces all steps in Phoenix (via OpenTelemetry)
+
 Step 3 only checks:
 
 Coverage types
