@@ -92,3 +92,4 @@ def evaluate_claim(claim: Claim, claim_text: str) -> dict:
         "consistency_valid": consistency_valid,
         "faithfulness": faithfulness
     }
+
