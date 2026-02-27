@@ -112,3 +112,44 @@ Multiple small claims in a short period
 Claims from blacklisted addresses or clients
 
 Unusual claim patterns vs historical data
+
+This gives you Step 4 fully functional:
+
+Deterministic scoring
+
+LLM explanation
+
+Phoenix tracing
+
+Clear recommendation for human review
+
+step 5
+
+Goal of Step 5
+
+Take outputs from:
+
+✅ Step 3 — Coverage Decision
+
+✅ Step 4 — Fraud & Risk Scoring
+
+And generate:
+
+A structured, professional, audit-ready report
+for customer OR internal insurance team.
+
+Step 5:
+
+✔ Summarizes results
+✔ Explains decision clearly
+✔ Formats for business use
+✔ Creates transparency
+✔ Ready for frontend or PDF
+
+Your Full System Architecture Now
+Step	Agent	Purpose
+1	Policy Extraction	Understand policy
+2	Claim Extraction + Validation	Structure & validate
+3	Coverage Decision	Financial approval logic
+4	Fraud & Risk Agent	Fraud & risk scoring
+5	Reporting Agent	Generate final professional report
