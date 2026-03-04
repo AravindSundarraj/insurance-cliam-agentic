@@ -3,10 +3,16 @@ from openinference.semconv.trace import SpanAttributes
 from app.schemas.policy_schema import Policy
 from app.schemas.claim_schema import Claim
 from app.services.llm_service import call_llm
-from app.evaluations.phoenix_evaluator import evaluate_decision_reasoning
+from app.evaluations.phoenix_evaluator import (
+    evaluate_decision_reasoning,
+    evaluate_faithfulness_score,
+)
 
 
-def generate_reasoning_llm(policy: Policy, claim: Claim, decision: dict):
+# -------------------------------------------------
+# LLM Explanation Generator
+# -------------------------------------------------
+def generate_reasoning_llm(policy: Policy, claim: Claim, decision: dict) -> str:
     """
     Generate human-readable explanation using LLM.
     """
@@ -36,25 +42,31 @@ Keep it concise and professional.
 
     with tracer.start_as_current_span("coverage_reasoning_llm_call") as span:
         span.set_attribute(SpanAttributes.INPUT_VALUE, prompt)
+
         response = call_llm(prompt)
+
         span.set_attribute(SpanAttributes.OUTPUT_VALUE, response)
 
     return response
 
 
-def coverage_decision(policy: Policy, claim: Claim):
+# -------------------------------------------------
+# Main Coverage Decision Logic
+# -------------------------------------------------
+def coverage_decision(policy: Policy, claim: Claim) -> dict:
     """
     Determine final coverage decision using deterministic logic.
+    Also performs LLM explanation + Phoenix evaluations.
     """
 
     decision = {
         "status": None,
-        "approved_amount": 0
+        "approved_amount": 0,
     }
 
-    # ----------------------------
+    # -------------------------------------------------
     # 1️⃣ Coverage Type Check
-    # ----------------------------
+    # -------------------------------------------------
     with tracer.start_as_current_span("coverage_type_check") as span:
         is_covered = claim.incident_type.lower() in [
             c.lower() for c in policy.coverage_types
@@ -67,13 +79,11 @@ def coverage_decision(policy: Policy, claim: Claim):
             decision["approved_amount"] = 0
             span.set_attribute("coverage.rejection_reason", "Incident type not covered")
 
-            explanation = generate_reasoning_llm(policy, claim, decision)
+            return _finalize_decision(policy, claim, decision)
 
-            return {**decision, "reason": explanation}
-
-    # ----------------------------
+    # -------------------------------------------------
     # 2️⃣ Exclusion Check
-    # ----------------------------
+    # -------------------------------------------------
     with tracer.start_as_current_span("exclusion_check") as span:
         is_excluded = claim.incident_type.lower() in [
             e.lower() for e in policy.exclusions
@@ -86,13 +96,11 @@ def coverage_decision(policy: Policy, claim: Claim):
             decision["approved_amount"] = 0
             span.set_attribute("coverage.rejection_reason", "Incident explicitly excluded")
 
-            explanation = generate_reasoning_llm(policy, claim, decision)
+            return _finalize_decision(policy, claim, decision)
 
-            return {**decision, "reason": explanation}
-
-    # ----------------------------
+    # -------------------------------------------------
     # 3️⃣ Deductible Calculation
-    # ----------------------------
+    # -------------------------------------------------
     with tracer.start_as_current_span("deductible_calculation") as span:
         payable = claim.claimed_amount - policy.deductible
         span.set_attribute("coverage.after_deductible", payable)
@@ -102,13 +110,11 @@ def coverage_decision(policy: Policy, claim: Claim):
             decision["approved_amount"] = 0
             span.set_attribute("coverage.rejection_reason", "Amount below deductible")
 
-            explanation = generate_reasoning_llm(policy, claim, decision)
+            return _finalize_decision(policy, claim, decision)
 
-            return {**decision, "reason": explanation}
-
-    # ----------------------------
+    # -------------------------------------------------
     # 4️⃣ Coverage Limit Enforcement
-    # ----------------------------
+    # -------------------------------------------------
     with tracer.start_as_current_span("coverage_limit_check") as span:
         if payable > policy.coverage_limit:
             approved_amount = policy.coverage_limit
@@ -117,25 +123,61 @@ def coverage_decision(policy: Policy, claim: Claim):
             approved_amount = payable
             decision["status"] = "APPROVED"
 
+        decision["approved_amount"] = approved_amount
         span.set_attribute("coverage.final_approved_amount", approved_amount)
 
-        decision["approved_amount"] = approved_amount
+    return _finalize_decision(policy, claim, decision)
 
-    # ----------------------------
-    # 5️⃣ Generate Explanation
-    # ----------------------------
+
+# -------------------------------------------------
+# Finalization: Explanation + Evaluation Layer
+# -------------------------------------------------
+def _finalize_decision(policy: Policy, claim: Claim, decision: dict) -> dict:
+    """
+    Generates explanation and runs Phoenix evaluations.
+    """
+
+    # 1️⃣ Generate LLM explanation
     explanation = generate_reasoning_llm(policy, claim, decision)
-    with tracer.start_as_current_span("coverage_reasoning_evaluation") as span:
-     reasoning_quality = evaluate_decision_reasoning(
-        policy_text=str(policy),
-        decision_reason=explanation
-    )
-    span.set_attribute("coverage.reasoning_quality", reasoning_quality)
 
-    print("Reasoning Quality:", reasoning_quality)
+    # Build context for faithfulness check
+    context = f"""
+Policy:
+Coverage Types: {policy.coverage_types}
+Exclusions: {policy.exclusions}
+Deductible: {policy.deductible}
+Coverage Limit: {policy.coverage_limit}
+
+Claim:
+Incident Type: {claim.incident_type}
+Claimed Amount: {claim.claimed_amount}
+Incident Date: {claim.incident_date}
+Cause: {claim.cause}
+
+Decision:
+Status: {decision['status']}
+Approved Amount: {decision['approved_amount']}
+"""
+
+    # 2️⃣ Reasoning Quality Evaluation
+    with tracer.start_as_current_span("coverage_reasoning_evaluation") as span:
+        reasoning_quality = evaluate_decision_reasoning(
+            policy_text=str(policy),
+            decision_reason=explanation,
+        )
+        span.set_attribute("evaluation.reasoning_quality", reasoning_quality)
+
+    # 3️⃣ Faithfulness Evaluation (Numeric 0–1)
+    with tracer.start_as_current_span("coverage_faithfulness_evaluation") as span:
+        faithfulness_score = evaluate_faithfulness_score(
+            context=context,
+            explanation=explanation,original_input=str(policy)
+        )
+        span.set_attribute("evaluation.faithfulness_score", faithfulness_score)
+
     return {
         **decision,
         "reason": explanation,
-        "reasoning_quality": reasoning_quality
+        "reasoning_quality": reasoning_quality,
+        "faithfulness_score": faithfulness_score,
     }
-

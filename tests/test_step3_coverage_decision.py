@@ -23,6 +23,7 @@ def test_approved_claim():
     )
 
     result = coverage_decision(policy, claim)
+    
 
     print("Decision Output:")
     print(result)

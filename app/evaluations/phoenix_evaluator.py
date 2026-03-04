@@ -3,6 +3,7 @@ from phoenix.evals.metrics.faithfulness import FaithfulnessEvaluator
 from phoenix.evals.llm import LLM
 from phoenix.client import Client
 import pandas as pd
+from phoenix.evals import EvalInput
 
 llm = LLM(provider="openai", model="gpt-4o-mini")
 client = Client()
@@ -23,17 +24,24 @@ def log_annotation(span_id: str, name: str, label: str, score: float, explanatio
 # ----------------------------
 # 1️⃣ Faithfulness Check (added context)
 # ----------------------------
-def evaluate_claim_faithfulness(input_text: str, extracted_claim: str, reference_context: str, span_id: str = None):
-    evaluator = FaithfulnessEvaluator(llm=llm)
-    result = evaluator.evaluate({
-        "input": input_text,
-        "output": extracted_claim,
-        "context": reference_context,
-    })
-    if span_id:
-        log_annotation(span_id, "faithfulness", result[0].label, result[0].score, result[0].explanation)
-    return result[0].score
+def evaluate_faithfulness_score(context: str, explanation: str, original_input: str = "") -> float:
+    """
+    Returns numeric faithfulness score (0–1)
+    """
+    evaluator = FaithfulnessEvaluator(llm=llm)  # pass the LLM
 
+    eval_input = {
+        "input": original_input,    # the original query/question
+        "output": explanation,       # the LLM's response
+        "context": context,          # the reference/source material
+    }
+
+    scores = evaluator.evaluate(eval_input=eval_input)
+
+    if not scores:
+        return 0.0
+
+    return float(scores[0].score)
 
 # ----------------------------
 # 2️⃣ Decision Reasoning Quality
