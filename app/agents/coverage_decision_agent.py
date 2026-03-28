@@ -7,8 +7,12 @@ from app.evaluations.phoenix_evaluator import (
     evaluate_decision_reasoning,
     evaluate_faithfulness_score,
 )
+from phoenix.trace import suppress_tracing
+from phoenix.client import Client
+from opentelemetry import trace as trace_api
+import pandas as pd
 
-
+client = Client()
 # -------------------------------------------------
 # LLM Explanation Generator
 # -------------------------------------------------
@@ -167,17 +171,32 @@ Approved Amount: {decision['approved_amount']}
         )
         span.set_attribute("evaluation.reasoning_quality", reasoning_quality)
 
-    # 3️⃣ Faithfulness Evaluation (Numeric 0–1)
     with tracer.start_as_current_span("coverage_faithfulness_evaluation") as span:
         faithfulness_score = evaluate_faithfulness_score(
             context=context,
-            explanation=explanation,original_input=str(policy)
+            explanation=explanation,
+            original_input=str(policy)
         )
-        span.set_attribute("evaluation.faithfulness_score", faithfulness_score)
 
-    return {
+        span.set_attribute("evaluation.faithfulness_score", faithfulness_score.score)
+
+        span_id = span.get_span_context().span_id
+        span_id_hex = format(span_id, '032x')
+
+        annotations_df = pd.DataFrame([{
+            "span_id": span_id_hex,
+            "name": "faithfulness",
+            "annotator_kind": "LLM",
+            "label": faithfulness_score.label,
+            "score": faithfulness_score.score,
+            "explanation": faithfulness_score.explanation,
+        }])
+        client.spans.log_span_annotations_dataframe(dataframe=annotations_df)
+
+    return {  # 4 spaces indent (inside def, outside with)
         **decision,
         "reason": explanation,
         "reasoning_quality": reasoning_quality,
-        "faithfulness_score": faithfulness_score,
+        "faithfulness_score": faithfulness_score.score,
     }
+

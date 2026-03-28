@@ -41,7 +41,7 @@ def evaluate_faithfulness_score(context: str, explanation: str, original_input: 
     if not scores:
         return 0.0
 
-    return float(scores[0].score)
+    return scores[0]
 
 # ----------------------------
 # 2️⃣ Decision Reasoning Quality

@@ -45,7 +45,7 @@ def extract_policy_details(policy_text: str) -> Policy:
     {policy_text}
     """
 
-    raw_output = traced_llm_call(prompt, call_llm)
+    raw_output = traced_llm_call(prompt, call_llm,"policy_extraction_llm_call")
 
     try:
         parsed = json.loads(raw_output)
